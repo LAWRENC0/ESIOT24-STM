@@ -1,1 +1,5 @@
-- debounce the button
+- fix tmp sensor
+- network state should be determined by send / receive too
+- mutexes ? 
+- useless code (serial, delays...)
+- refactoring
