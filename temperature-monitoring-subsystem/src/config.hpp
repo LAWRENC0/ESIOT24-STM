@@ -1,0 +1,7 @@
+#define PIN_RED_LED 17
+#define PIN_GREEN_LED 16
+#define PIN_TEMP_SENSOR 34
+
+#define MSG_BUFFER_SIZE  50
+
+#define MQTT_PORT 1883
