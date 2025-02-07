@@ -5,3 +5,5 @@
 #define MSG_BUFFER_SIZE  50
 
 #define MQTT_PORT 1883
+
+#define DEFAULT_FREQUENCY_MS 1000
