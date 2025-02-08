@@ -9,9 +9,5 @@ public class ControlUnitApplication {
 
         // Deploy all application verticles
         vertx.deployVerticle(new SystemManagerVerticle());
-        vertx.deployVerticle(new MqttAgentVerticle());
-        vertx.deployVerticle(new SerialAgentVerticle());
-        vertx.deployVerticle(new HttpAgentVerticle());
-
     }
 }

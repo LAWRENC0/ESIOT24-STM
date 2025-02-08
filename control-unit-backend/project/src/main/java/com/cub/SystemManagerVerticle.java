@@ -1,6 +1,9 @@
 package com.cub;
 
 import com.cub.constants.EventBusAddress;
+import com.cub.states.ControlUnitFSM;
+import com.cub.states.TemperatureCUFSM;
+import com.cub.states.WindowCUFSM;
 
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.eventbus.EventBus;
@@ -8,9 +11,27 @@ import io.vertx.core.json.JsonObject;
 
 public class SystemManagerVerticle extends AbstractVerticle {
 
+    private final ControlUnitFSM tempCUFSM;
+    private final ControlUnitFSM windowCUFSM;
+    private final MqttAgentVerticle mqttAgent;
+    private final HttpAgentVerticle httpAgent;
+    private final SerialAgentVerticle serialAgent;
+    private final EventBus eb;
+
+    public SystemManagerVerticle() {
+        this.eb = vertx.eventBus();
+        this.mqttAgent = new MqttAgentVerticle();
+        this.httpAgent = new HttpAgentVerticle();
+        this.serialAgent = new SerialAgentVerticle();
+        vertx.deployVerticle(mqttAgent);
+        vertx.deployVerticle(httpAgent);
+        vertx.deployVerticle(serialAgent);
+        this.tempCUFSM = new TemperatureCUFSM(mqttAgent, httpAgent, serialAgent, eb);
+        this.windowCUFSM = new WindowCUFSM(mqttAgent, httpAgent, serialAgent, eb);
+    }
+
     @Override
     public void start() {
-        EventBus eb = vertx.eventBus();
 
         // Listen for temperature updates from MQTT Agent
         eb.consumer(EventBusAddress.TEMP_ADDRESS.getAddress(), message -> {

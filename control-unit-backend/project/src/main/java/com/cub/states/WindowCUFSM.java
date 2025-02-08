@@ -1,5 +1,10 @@
 package com.cub.states;
 
+import com.cub.HttpAgentVerticle;
+import com.cub.MqttAgentVerticle;
+import com.cub.SerialAgentVerticle;
+import io.vertx.core.eventbus.EventBus;
+
 public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     public enum State {
         AUTOMATIC("Automatic"), MANUAL("Manual");
@@ -17,9 +22,17 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     }
 
     private State currentState;
+    private final MqttAgentVerticle mqttAgent;
+    private final HttpAgentVerticle httpAgent;
+    private final SerialAgentVerticle serialAgent;
+    private final EventBus eb;
 
-    public WindowCUFSM() {
+    public WindowCUFSM(MqttAgentVerticle mAg, HttpAgentVerticle hAg, SerialAgentVerticle sAg, EventBus e) {
         this.currentState = State.AUTOMATIC;
+        this.mqttAgent = mAg;
+        this.httpAgent = hAg;
+        this.serialAgent = sAg;
+        this.eb = e;
     }
 
     public State getState() {

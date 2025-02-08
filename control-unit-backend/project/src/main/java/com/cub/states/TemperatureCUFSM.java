@@ -1,5 +1,11 @@
 package com.cub.states;
 
+import com.cub.MqttAgentVerticle;
+import com.cub.HttpAgentVerticle;
+import com.cub.SerialAgentVerticle;
+
+import io.vertx.core.eventbus.EventBus;
+
 public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> {
     public enum State {
         NORMAL("Normal"), HOT("Normal"), TOO_HOT("Normal"), ALARM("Normal");
@@ -17,9 +23,17 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
     }
 
     private State currentState;
+    private final MqttAgentVerticle mqttAgent;
+    private final HttpAgentVerticle httpAgent;
+    private final SerialAgentVerticle serialAgent;
+    private final EventBus eb;
 
-    public TemperatureCUFSM() {
+    public TemperatureCUFSM(MqttAgentVerticle mAg, HttpAgentVerticle hAg, SerialAgentVerticle sAg, EventBus e) {
         this.currentState = State.NORMAL;
+        this.mqttAgent = mAg;
+        this.httpAgent = hAg;
+        this.serialAgent = sAg;
+        this.eb = e;
     }
 
     public State getState() {
