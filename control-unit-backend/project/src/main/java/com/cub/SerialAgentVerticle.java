@@ -27,7 +27,7 @@ public class SerialAgentVerticle extends AbstractVerticle {
                 serialPort.readBytes(buffer, buffer.length);
                 String serialResponse = new String(buffer);
                 // Publish serial data for further processing
-                vertx.eventBus().publish(EventBusAddress.WCU_ADDRESS.getAddress(),
+                vertx.eventBus().publish(EventBusAddress.concat(EventBusAddress.WINDOW_STATE, EventBusAddress.INCOMING),
                         serialResponse);
             }
         });

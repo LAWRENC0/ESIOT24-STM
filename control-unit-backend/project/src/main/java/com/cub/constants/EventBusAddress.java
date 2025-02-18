@@ -1,10 +1,13 @@
 package com.cub.constants;
 
 public enum EventBusAddress {
-    TEMP_ADDRESS("temperature"),
-    ANGLE_ADDRESS("angle"),
-    WCU_ADDRESS("window_control_unit"),
-    TCU_ADDRESS("temperature_control_unit");
+    TEMP("temperature"),
+    FREQ("frequency"),
+    WINDOW_STATE("window_state"),
+    SYSTEM_STATE("system_state"),
+    ANGLE("angle"),
+    INCOMING("incoming"),
+    OUTGOING("outgoing");
 
     private final String address;
 
@@ -14,5 +17,9 @@ public enum EventBusAddress {
 
     public String getAddress() {
         return address;
+    }
+
+    public static String concat(EventBusAddress prefix, EventBusAddress suffix) {
+        return prefix.getAddress() + "." + suffix.getAddress();
     }
 }

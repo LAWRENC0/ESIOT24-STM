@@ -1,14 +1,23 @@
 package com.cub.states;
 
-import com.cub.MqttAgentVerticle;
-import com.cub.HttpAgentVerticle;
-import com.cub.SerialAgentVerticle;
+import com.cub.constants.EventBusAddress;
+import com.cub.utilities.TemperatureRecord;
 
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.json.JsonObject;
 
 public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> {
+    public static final float T1_celsius = 20;
+    public static final float T2_celsius = 25;
+    public static final long DT_ms = 5000;
+    public static final int F1_tps = 1; // times per second
+    public static final int F2_tps = 2;
+    public static final int WINDOW_CLOSED_ANGLE = 0;
+    public static final int WINDOW_OPEN_ANGLE = 90;
+    private static final int N = 15;
+
     public enum State {
-        NORMAL("Normal"), HOT("Normal"), TOO_HOT("Normal"), ALARM("Normal");
+        NORMAL("Normal"), HOT("Hot"), TOO_HOT("Too_Hot"), ALARM("Alarm");
 
         private final String description;
 
@@ -22,18 +31,16 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
         }
     }
 
-    private State currentState;
-    private final MqttAgentVerticle mqttAgent;
-    private final HttpAgentVerticle httpAgent;
-    private final SerialAgentVerticle serialAgent;
     private final EventBus eb;
+    private long ts;
+    private TemperatureRecord temp_record;
+    private State currentState;
 
-    public TemperatureCUFSM(MqttAgentVerticle mAg, HttpAgentVerticle hAg, SerialAgentVerticle sAg, EventBus e) {
+    public TemperatureCUFSM(EventBus e) {
         this.currentState = State.NORMAL;
-        this.mqttAgent = mAg;
-        this.httpAgent = hAg;
-        this.serialAgent = sAg;
         this.eb = e;
+        this.ts = System.currentTimeMillis();
+        this.temp_record = new TemperatureRecord(N);
     }
 
     public State getState() {
@@ -41,24 +48,82 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
     }
 
     public void setState(State newState) {
+        if (newState == State.TOO_HOT && currentState != State.TOO_HOT) {
+            this.ts = System.currentTimeMillis();
+        }
         this.currentState = newState;
     }
 
-    public void handleEvent(String event) {
+    public void handleEvent(JsonObject command) {
+        if (command.containsKey("temperature")) {
+            float temp = command.getFloat("temperature");
+            temp_record.addTemperature(temp);
+            switch (currentState) {
+                case NORMAL:
+                    if (T1_celsius <= temp && T2_celsius >= temp) {
+                        setState(State.HOT);
+                    }
+                    break;
+                case HOT:
+                    if (T2_celsius < temp) {
+                        setState(State.TOO_HOT);
+                    } else if (temp < T1_celsius) {
+                        setState(State.NORMAL);
+                    }
+                    break;
+                case TOO_HOT:
+                    if (T1_celsius <= temp && T2_celsius >= temp) {
+                        setState(State.HOT);
+                    } else if (System.currentTimeMillis() - this.ts >= DT_ms) {
+                        setState(State.ALARM);
+                    }
+                    break;
+                case ALARM:
+                    break;
+                default:
+                    System.out.println("State not found");
+                    break;
+            }
+        } else if (command.containsKey("unlock")) {
+            switch (currentState) {
+                case NORMAL, HOT, TOO_HOT:
+                    break;
+                case ALARM:
+                    setState(State.NORMAL);
+                    break;
+            }
+        }
+        tick();
+    }
+
+    private void tick() {
+        long frequency = 0;
+        int angle = WINDOW_CLOSED_ANGLE;
         switch (currentState) {
             case NORMAL:
-                System.out.println("System is off");
+                frequency = F1_tps;
+                angle = WINDOW_CLOSED_ANGLE;
                 break;
             case HOT:
-                System.out.println("Cooling system active");
+                frequency = F2_tps;
+                angle = (int) Math
+                        .round((0.99 / (T2_celsius - T1_celsius)) * (temp_record.getLastTemperature() - T1_celsius)
+                                + 0.01);
                 break;
             case TOO_HOT:
-                System.out.println("Heating system active");
+                frequency = F2_tps;
+                angle = WINDOW_OPEN_ANGLE;
                 break;
             case ALARM:
-                System.out.println("System idle");
+                frequency = F2_tps;
+                angle = WINDOW_OPEN_ANGLE;
                 break;
         }
+        eb.publish(EventBusAddress.concat(EventBusAddress.FREQ, EventBusAddress.OUTGOING), frequency);
+        eb.publish(EventBusAddress.concat(EventBusAddress.ANGLE, EventBusAddress.OUTGOING), angle);
+        eb.publish(EventBusAddress.concat(EventBusAddress.TEMP, EventBusAddress.OUTGOING),
+                temp_record.getLastTemperature());
+        displayStateMessage();
     }
 
     public void displayStateMessage() {

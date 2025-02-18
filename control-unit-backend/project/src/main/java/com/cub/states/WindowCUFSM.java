@@ -4,6 +4,7 @@ import com.cub.HttpAgentVerticle;
 import com.cub.MqttAgentVerticle;
 import com.cub.SerialAgentVerticle;
 import io.vertx.core.eventbus.EventBus;
+import io.vertx.core.json.JsonObject;
 
 public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     public enum State {
@@ -22,16 +23,10 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     }
 
     private State currentState;
-    private final MqttAgentVerticle mqttAgent;
-    private final HttpAgentVerticle httpAgent;
-    private final SerialAgentVerticle serialAgent;
     private final EventBus eb;
 
-    public WindowCUFSM(MqttAgentVerticle mAg, HttpAgentVerticle hAg, SerialAgentVerticle sAg, EventBus e) {
+    public WindowCUFSM(EventBus e) {
         this.currentState = State.AUTOMATIC;
-        this.mqttAgent = mAg;
-        this.httpAgent = hAg;
-        this.serialAgent = sAg;
         this.eb = e;
     }
 
@@ -43,7 +38,7 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
         this.currentState = newState;
     }
 
-    public void handleEvent(String event) {
+    public void handleEvent(JsonObject command) {
         switch (currentState) {
             case AUTOMATIC:
                 System.out.println("System is off");
