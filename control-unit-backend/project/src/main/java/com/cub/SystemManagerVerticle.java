@@ -42,13 +42,13 @@ public class SystemManagerVerticle extends AbstractVerticle {
         });
 
         eb.consumer(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.WINDOW_STATE), message -> {
-            float temperature = (Float) message.body();
+            String window_state = (String) message.body();
             // System.out.println("Received temperature: " + temperature);
 
             // Process temperature data (determine state, thresholds, etc.)
-            JsonObject tempCommand = new JsonObject();
-            tempCommand.put("temperature", temperature);
-            tempCUFSM.handleEvent(tempCommand);
+            JsonObject windowCommand = new JsonObject();
+            windowCommand.put("window_state", window_state);
+            windowCUFSM.handleEvent(windowCommand);
         });
     }
 
