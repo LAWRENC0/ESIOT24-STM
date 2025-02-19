@@ -32,6 +32,22 @@ public class SerialAgentVerticle extends AbstractVerticle {
             }
         });
 
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.TEMP), message -> {
+            String temp = (String) message.body();
+            serialPort.writeBytes(temp.getBytes(), temp.length());
+        });
+
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE), message -> {
+            String angle = (String) message.body();
+            serialPort.writeBytes(angle.getBytes(), angle.length());
+        });
+
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),
+                message -> {
+                    String window_state = (String) message.body();
+                    serialPort.writeBytes(window_state.getBytes(), window_state.length());
+                });
+
     }
 
     @Override
@@ -39,11 +55,5 @@ public class SerialAgentVerticle extends AbstractVerticle {
         if (serialPort != null && serialPort.isOpen()) {
             serialPort.closePort();
         }
-    }
-
-    public void sendMessage(String message) {
-        System.out.println("Received serial message to be sent: " + message);
-        // Send command to the hardware via the serial port
-        serialPort.writeBytes(message.getBytes(), message.length());
     }
 }
