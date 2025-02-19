@@ -20,7 +20,7 @@ String receivedMsg = "";
 
 void switchState() {
     state->switchValue();
-    MsgService.sendMsg(state->toString());
+    MsgService.sendMsg("{window_state: " + state->toString());
 }
 
 void setup() {

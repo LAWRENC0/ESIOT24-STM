@@ -24,7 +24,7 @@ Led* green_led;
 TwoLedMonitor* leds;
 TempSensor* temp_sensor;
 bool net_state;
-long frequency_ms;
+long frequency_s;
 
 void setup_wifi() {
   delay(10);
@@ -60,7 +60,7 @@ void reconnect() {
     } else {
       Serial.print("Failed, rc=");
       Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
+      Serial.println(" try again in 0.5 seconds");
       vTaskDelay(500 / portTICK_PERIOD_MS);
     }
   }
@@ -79,7 +79,7 @@ void setup() {
   leds->setState(TwoLedMonitor::State::AVAILABLE);
   temp_sensor = new TempSensor(PIN_TEMP_SENSOR);
   net_state = false;
-  frequency_ms = DEFAULT_FREQUENCY_MS;
+  frequency_s = DEFAULT_FREQUENCY_S;
 
   // Create FreeRTOS queues
   temperatureQueue = xQueueCreate(10, sizeof(float));
@@ -98,7 +98,7 @@ void setup() {
 
 void NetworkTaskCode(void* parameter) {
   float temp;
-  long freq = DEFAULT_FREQUENCY_MS;
+  long freq = DEFAULT_FREQUENCY_S;
   bool network_state = false;
 
   for (;;) {
@@ -122,7 +122,7 @@ void NetworkTaskCode(void* parameter) {
       Serial.println("Received frquency value");
     }
 
-    vTaskDelay(freq / portTICK_PERIOD_MS);
+    vTaskDelay(freq * 1000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -133,8 +133,8 @@ void loop() {
   xQueueSend(temperatureQueue, &temp, 0);
 
   // Receive new frequency if available
-  if (xQueueReceive(frequencyQueue, &frequency_ms, 0) == pdTRUE) {
-    Serial.println(String("Updated frequency: ") + frequency_ms);
+  if (xQueueReceive(frequencyQueue, &frequency_s, 0) == pdTRUE) {
+    Serial.println(String("Updated frequency: ") + frequency_s);
   }
 
   // Receive network state and update LEDs
@@ -143,5 +143,5 @@ void loop() {
     leds->setState(net_state ? TwoLedMonitor::State::AVAILABLE : TwoLedMonitor::State::UNAVAILABLE);
   }
 
-  vTaskDelay(frequency_ms / portTICK_PERIOD_MS);
+  vTaskDelay(frequency_s * 1000 / portTICK_PERIOD_MS);
 }
