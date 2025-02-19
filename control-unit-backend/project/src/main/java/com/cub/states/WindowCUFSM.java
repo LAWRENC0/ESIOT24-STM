@@ -1,10 +1,10 @@
 package com.cub.states;
 
-import com.cub.HttpAgentVerticle;
-import com.cub.MqttAgentVerticle;
-import com.cub.SerialAgentVerticle;
+import com.cub.constants.EventBusAddress;
+
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
+import netscape.javascript.JSObject;
 
 public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     public enum State {
@@ -23,6 +23,7 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     }
 
     private State currentState;
+    private int door_angle;
     private final EventBus eb;
 
     public WindowCUFSM(EventBus e) {
@@ -38,15 +39,34 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
         this.currentState = newState;
     }
 
-    public void handleEvent(JsonObject command) {
-        switch (currentState) {
-            case AUTOMATIC:
-                System.out.println("System is off");
-                break;
-            case MANUAL:
-                System.out.println("Cooling system active");
-                break;
+    public JsonObject handleEvent(JsonObject command) {
+        if (command.containsKey("window_state")) {
+            String new_state = command.getString("window_state");
+            switch (currentState) {
+                case AUTOMATIC:
+                    if (new_state == State.MANUAL.getDescription()) {
+                        setState(State.MANUAL);
+                    }
+                    break;
+                case MANUAL:
+                    if (new_state == State.AUTOMATIC.getDescription()) {
+                        setState(State.AUTOMATIC);
+                    }
+                    break;
+            }
+        } else if (command.containsKey("angle")) {
+            int angle = command.getInteger("angle");
+            this.door_angle = angle;
         }
+        return tick();
+    }
+
+    private JsonObject tick() {
+        JsonObject message = new JsonObject();
+        message.put(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE), this.door_angle);
+        message.put(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),
+                this.getState().getDescription());
+        return message;
     }
 
     public void displayStateMessage() {

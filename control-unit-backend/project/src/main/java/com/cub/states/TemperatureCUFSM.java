@@ -54,7 +54,7 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
         this.currentState = newState;
     }
 
-    public void handleEvent(JsonObject command) {
+    public JsonObject handleEvent(JsonObject command) {
         if (command.containsKey("temperature")) {
             float temp = command.getFloat("temperature");
             temp_record.addTemperature(temp);
@@ -93,10 +93,10 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
                     break;
             }
         }
-        tick();
+        return tick();
     }
 
-    private void tick() {
+    private JsonObject tick() {
         long frequency = 0;
         int angle = WINDOW_CLOSED_ANGLE;
         switch (currentState) {
@@ -119,11 +119,12 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
                 angle = WINDOW_OPEN_ANGLE;
                 break;
         }
-        eb.publish(EventBusAddress.concat(EventBusAddress.FREQ, EventBusAddress.OUTGOING), frequency);
-        eb.publish(EventBusAddress.concat(EventBusAddress.ANGLE, EventBusAddress.OUTGOING), angle);
-        eb.publish(EventBusAddress.concat(EventBusAddress.TEMP, EventBusAddress.OUTGOING),
+        JsonObject message = new JsonObject();
+        message.put(EventBusAddress.concat(EventBusAddress.FREQ, EventBusAddress.OUTGOING), frequency);
+        message.put(EventBusAddress.concat(EventBusAddress.ANGLE, EventBusAddress.OUTGOING), angle);
+        message.put(EventBusAddress.concat(EventBusAddress.TEMP, EventBusAddress.OUTGOING),
                 temp_record.getLastTemperature());
-        displayStateMessage();
+        return message;
     }
 
     public void displayStateMessage() {
