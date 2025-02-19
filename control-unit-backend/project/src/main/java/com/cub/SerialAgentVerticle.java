@@ -31,6 +31,7 @@ public class SerialAgentVerticle extends AbstractVerticle {
                         serialResponse);
             }
         });
+
     }
 
     @Override

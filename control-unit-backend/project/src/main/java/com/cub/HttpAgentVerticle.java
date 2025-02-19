@@ -1,5 +1,7 @@
 package com.cub;
 
+import com.cub.constants.EventBusAddress;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
@@ -22,13 +24,11 @@ public class HttpAgentVerticle extends AbstractVerticle {
             }
         });
 
-        // Listen for dashboard update events
-        vertx.eventBus().consumer("dashboard.updates", message -> {
-            JsonObject update = (JsonObject) message.body();
-            System.out.println("Dashboard update received: " + update);
-            // Merge the new update with the current state
-            currentState.mergeIn(update);
-        });
+        // Listen for event bus updates
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.SYSTEM_STATE),
+                message -> {
+                    JsonObject update = (JsonObject) message.body();
+                });
     }
 
     private void handleStateRequest(RoutingContext context) {
