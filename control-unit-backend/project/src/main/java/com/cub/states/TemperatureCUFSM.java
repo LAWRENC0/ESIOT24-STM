@@ -1,6 +1,5 @@
 package com.cub.states;
 
-import com.cub.constants.EventBusAddress;
 import com.cub.utilities.TemperatureRecord;
 
 import io.vertx.core.eventbus.EventBus;
@@ -84,13 +83,13 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
                     System.out.println("State not found");
                     break;
             }
-        } else if (command.containsKey("unlock")) {
+        } else if (command.containsKey("system_state") && command.getString("system_state") == "normal") {
             switch (currentState) {
                 case NORMAL, HOT, TOO_HOT:
-                    break;
+                    return new JsonObject();
                 case ALARM:
                     setState(State.NORMAL);
-                    break;
+                    return command;
             }
         }
         return tick();
@@ -120,9 +119,9 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
                 break;
         }
         JsonObject message = new JsonObject();
-        message.put(EventBusAddress.concat(EventBusAddress.FREQ, EventBusAddress.OUTGOING), frequency);
-        message.put(EventBusAddress.concat(EventBusAddress.ANGLE, EventBusAddress.OUTGOING), angle);
-        message.put(EventBusAddress.concat(EventBusAddress.TEMP, EventBusAddress.OUTGOING),
+        message.put("frequency", frequency);
+        message.put("angle", angle);
+        message.put("temperature",
                 temp_record.getLastTemperature());
         return message;
     }
