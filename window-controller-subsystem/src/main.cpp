@@ -20,7 +20,8 @@ String receivedMsg = "";
 
 void switchState() {
     state->switchValue();
-    MsgService.sendMsg("{window_state: " + state->toString());
+    // MsgService.sendMsg("{\"window_state\": \"" + state->toString() + "\"}");
+    MsgService.sendMsg(state->toString());
 }
 
 void setup() {
@@ -56,6 +57,10 @@ void printToScreen() {
 void loop() {
     printToScreen();
 
+    if (state->getValue() == State::Value::MANUAL) {
+        door_angle = map(potentiometer->getValue(), 0, 1023, MOTOR_CLOSE, MOTOR_OPEN);
+    }
+    disableInterrupt(PIN_BUTTON);
     if (MsgService.isMsgAvailable()) {
         Msg* msg = MsgService.receiveMsg();
         if (msg != NULL) {
@@ -74,9 +79,7 @@ void loop() {
             delete msg;
         }
     }
-    if (state->getValue() == State::Value::MANUAL) {
-        door_angle = map(potentiometer->getValue(), 0, 1023, MOTOR_CLOSE, MOTOR_OPEN);
-    }
+    enableInterrupt(PIN_BUTTON, switchState, RISING);
 
     // MOVE DOOR
     servo->moveToPosition(door_angle);

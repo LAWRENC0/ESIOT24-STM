@@ -1,10 +1,13 @@
 #include "kernel/Pattern.hpp"
 
+#include "kernel/MsgService.hpp"
+
 boolean Pattern::matchTemp(const String& msg) {
-    if (!msg.startsWith("{temp: ") || !msg.endsWith("}")) {
+    MsgService.sendMsg(msg);
+    if (!msg.startsWith("{\"temp\":") || !msg.endsWith("}")) {
         return false;
     }
-    String valueStr = msg.substring(7, msg.length() - 1);
+    String valueStr = msg.substring(8, msg.length() - 1);
     float tempValue = valueStr.toFloat();
     return tempValue != 0.0 || valueStr == "0" || valueStr.indexOf('.') != -1;
 }
@@ -26,7 +29,7 @@ boolean Pattern::matchState(const String& msg) {
     return false;
 }
 
-float Pattern::getTemp(const String& msg) { return msg.substring(7, msg.length() - 1).toFloat(); }
+float Pattern::getTemp(const String& msg) { return msg.substring(8, msg.length() - 1).toFloat(); }
 
 int Pattern::getAngle(const String& msg) { return msg.substring(8, msg.length() - 1).toInt(); }
 
