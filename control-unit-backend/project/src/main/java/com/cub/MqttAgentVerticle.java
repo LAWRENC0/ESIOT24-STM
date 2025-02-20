@@ -53,13 +53,13 @@ public class MqttAgentVerticle extends AbstractVerticle {
             if (client != null && client.isConnected()) {
                 client.publish(
                         FREQ_TOPIC,
-                        Buffer.buffer(String.valueOf((Float) message.body())),
+                        Buffer.buffer(String.valueOf((Long) message.body())),
                         MqttQoS.AT_LEAST_ONCE,
                         false,
                         false,
                         ack -> {
                             if (ack.succeeded()) {
-                                System.out.println("Message published to topic: " + FREQ_TOPIC);
+                                // System.out.println("Message published to topic: " + FREQ_TOPIC);
                             } else {
                                 System.out.println("Failed to publish message: " + ack.cause().getMessage());
                             }

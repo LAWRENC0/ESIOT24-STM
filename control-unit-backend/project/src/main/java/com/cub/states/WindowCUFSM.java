@@ -37,6 +37,7 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     }
 
     public JsonObject handleEvent(JsonObject command) {
+        System.out.println("windowCUFSM: " + command.toString());
         if (command.containsKey("window_state")) {
             String new_state = command.getString("window_state");
             switch (currentState) {

@@ -1,7 +1,5 @@
 package com.cub;
 
-import java.util.Map;
-
 import com.cub.constants.EventBusAddress;
 import com.cub.states.TemperatureCUFSM;
 import com.cub.states.WindowCUFSM;
@@ -46,13 +44,13 @@ public class SystemManagerVerticle extends AbstractVerticle {
             // in MANUAL mode the ANGLE must NOT be updated by the TempCUFSM
             if (comm.containsKey("temperature"))
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.TEMP),
-                        comm.getString("temperature"));
+                        comm.getFloat("temperature"));
             if (comm.containsKey("frequency"))
-                eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.TEMP),
-                        comm.getString("frequency"));
+                eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.FREQ),
+                        comm.getLong("frequency"));
             if (comm.containsKey("angle") && windowCUFSM.getState() == WindowCUFSM.State.AUTOMATIC)
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE),
-                        comm.getString("angle"));
+                        comm.getInteger("angle"));
         });
 
         // INCOMING window_state updates (from WCS(Serial), DSHB(http))->triggers the

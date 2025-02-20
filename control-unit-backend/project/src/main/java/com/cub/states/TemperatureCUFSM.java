@@ -54,6 +54,7 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
     }
 
     public JsonObject handleEvent(JsonObject command) {
+        System.out.println("tempCUFSM: " + command.toString());
         if (command.containsKey("temperature")) {
             float temp = command.getFloat("temperature");
             temp_record.addTemperature(temp);

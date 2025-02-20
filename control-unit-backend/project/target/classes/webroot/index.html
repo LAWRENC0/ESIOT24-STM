@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Temperature Monitoring Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="script.js" defer></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>Temperature Monitoring Dashboard</h1>
+
+        <!-- Graph Section -->
+        <h2>Temperature Graph</h2>
+        <div class="graph-container">
+            <canvas id="temperatureGraph"></canvas> <!-- Placeholder for graph -->
+        </div>
+
+        <!-- System State & Statistics -->
+        <div class="stats-container">
+            <h2>System Status</h2>
+            <p>System State: <span id="system_state">NORMAL</span></p>
+            <p>Avg Temperature: <span id="avgTemp">--</span>°C</p>
+            <p>Max Temperature: <span id="maxTemp">--</span>°C</p>
+            <p>Min Temperature: <span id="minTemp">--</span>°C</p>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls-container">
+            <!-- Mode Switch and Manual Input -->
+            <label class="switch-label" for="window_state_switch" id="window_state_text">Window State (Manual -
+                Auto):</label>
+            <label class="switch">
+                <input type="checkbox" id="window_state">
+                <span class="slider round"></span>
+            </label>
+            <label for="window_angle" class="input-label">Window Angle:</label>
+            <input type="number" id="angle" min="0" max="90" disabled>
+
+            <!-- Alarm Resolution Button -->
+            <button id="system_state_solve" class="button alarm">Resolve Alarm</button>
+        </div>
+    </div>
+</body>
+
+</html>
