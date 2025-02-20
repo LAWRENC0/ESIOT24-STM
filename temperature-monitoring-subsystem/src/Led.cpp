@@ -9,7 +9,7 @@ Led::Led(int pin) {
 
 void Led::setState(State new_state) {
     this->state = new_state;
-    digitalWrite(pin, 1-(int)state);
+    digitalWrite(pin, (int)state);
 }
 
 Led::State Led::getState() { return state; };
