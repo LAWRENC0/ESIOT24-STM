@@ -26,8 +26,8 @@ public class SystemManagerVerticle extends AbstractVerticle {
         vertx.deployVerticle(mqttAgent);
         vertx.deployVerticle(httpAgent);
         vertx.deployVerticle(serialAgent);
-        this.tempCUFSM = new TemperatureCUFSM(eb);
-        this.windowCUFSM = new WindowCUFSM(eb);
+        this.tempCUFSM = new TemperatureCUFSM();
+        this.windowCUFSM = new WindowCUFSM();
 
         // INCOMING TEMPERATURE UPDATES (from TMS(mqtt))-> triggers the TempCUFSM, which
         // determines
@@ -51,6 +51,9 @@ public class SystemManagerVerticle extends AbstractVerticle {
             if (comm.containsKey("angle") && windowCUFSM.getState() == WindowCUFSM.State.AUTOMATIC)
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE),
                         comm.getInteger("angle"));
+            if (comm.containsKey("system_state"))
+                eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.SYSTEM_STATE),
+                        comm.getString("system_state"));
         });
 
         // INCOMING window_state updates (from WCS(Serial), DSHB(http))->triggers the
@@ -72,13 +75,13 @@ public class SystemManagerVerticle extends AbstractVerticle {
         // solves the alarm state and sends this update
         eb.consumer(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.SYSTEM_STATE), message -> {
             String system_state = (String) message.body();
-
             JsonObject ssCommand = new JsonObject();
             ssCommand.put("system_state", system_state);
             JsonObject comm = tempCUFSM.handleEvent(ssCommand);
-            if (comm.containsKey("system_state"))
+            if (comm.containsKey("system_state")) {
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.SYSTEM_STATE),
                         comm.getValue("system_state"));
+            }
         });
 
         // incoming window_angle updates (from DSHB(http))-> triggers the windowCUFSM

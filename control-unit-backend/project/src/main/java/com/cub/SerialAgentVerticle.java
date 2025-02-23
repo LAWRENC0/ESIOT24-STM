@@ -1,10 +1,14 @@
 package com.cub;
 
 import com.fazecast.jSerialComm.SerialPort;
+import com.google.gson.JsonSyntaxException;
+
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.json.DecodeException;
 import io.vertx.core.json.JsonObject;
 
 import com.cub.constants.EventBusAddress;
+import com.google.gson.JsonParser;
 
 public class SerialAgentVerticle extends AbstractVerticle {
 
@@ -25,41 +29,44 @@ public class SerialAgentVerticle extends AbstractVerticle {
         }
 
         // Optionally, read data from the serial port periodically
-        vertx.setPeriodic(50, id -> {
+        vertx.setPeriodic(300, id -> {
             if (serialPort.bytesAvailable() > 0) {
                 byte[] buffer = new byte[serialPort.bytesAvailable()];
                 serialPort.readBytes(buffer, buffer.length);
                 String serialResponse = new String(buffer).trim();
-                System.out.println("SERIAL" + serialResponse);
-                JsonObject response = new JsonObject().put("window_state", serialResponse);
-                // JsonObject response = new JsonObject(serialResponse);
-                vertx.eventBus().publish(
-                        EventBusAddress.concat(EventBusAddress.INCOMING,
-                                EventBusAddress.WINDOW_STATE),
-                        response.getValue("window_state"));
+                System.out.println("REC: " + serialResponse);
+                if (!serialResponse.isEmpty() && isValidJson(serialResponse)) {
+                    try {
+                        JsonObject response = new JsonObject(serialResponse);
+                        if (response.containsKey(EventBusAddress.WINDOW_STATE.getAddress())) {
+                            vertx.eventBus().publish(
+                                    EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.WINDOW_STATE),
+                                    response.getString(EventBusAddress.WINDOW_STATE.getAddress()));
+                        } else if (response.containsKey(EventBusAddress.ANGLE.getAddress())) {
+                            vertx.eventBus().publish(
+                                    EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.ANGLE),
+                                    response.getInteger(EventBusAddress.ANGLE.getAddress()));
+                        }
+                    } catch (DecodeException e) {
+                        System.out.println("Decode Exception in SerialAgent");
+                    }
+                }
             }
         });
 
         vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.TEMP), message -> {
             float temp = (float) message.body();
-            JsonObject tempMessage = new JsonObject().put("temp", temp);
-            System.out.println("writing temp to serial: " + tempMessage);
-            System.out.println("Bytes written: "
-                    + serialPort.writeBytes(tempMessage.toString().getBytes(), tempMessage.toString().length()));
+            String toSend = EventBusAddress.TEMP.getAddress() + ":" + temp + "\n";
+            serialPort.writeBytes(toSend.getBytes(), toSend.length());
+            // System.out.println(tempMessage);
         });
 
-        // vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING,
-        // EventBusAddress.ANGLE), message -> {
-        // String angle = (String) message.body();
-        // serialPort.writeBytes(angle.getBytes(), angle.length());
-        // });
-
-        // vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING,
-        // EventBusAddress.WINDOW_STATE),
-        // message -> {
-        // String window_state = (String) message.body();
-        // serialPort.writeBytes(window_state.getBytes(), window_state.length());
-        // });
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE), message -> {
+            int angle = (int) message.body();
+            String toSend = EventBusAddress.ANGLE.getAddress() + ":" + angle + "\n";
+            serialPort.writeBytes(toSend.getBytes(), toSend.length());
+            // System.out.println(tempMessage);
+        });
 
     }
 
@@ -67,6 +74,15 @@ public class SerialAgentVerticle extends AbstractVerticle {
     public void stop() {
         if (serialPort != null && serialPort.isOpen()) {
             serialPort.closePort();
+        }
+    }
+
+    public static boolean isValidJson(String json) {
+        try {
+            JsonParser.parseString(json);
+            return true;
+        } catch (JsonSyntaxException e) {
+            return false;
         }
     }
 }

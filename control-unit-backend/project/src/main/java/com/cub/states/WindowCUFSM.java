@@ -1,6 +1,7 @@
 package com.cub.states;
 
-import io.vertx.core.eventbus.EventBus;
+import java.util.Objects;
+
 import io.vertx.core.json.JsonObject;
 
 public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
@@ -21,11 +22,9 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
 
     private State currentState;
     private int door_angle;
-    private final EventBus eb;
 
-    public WindowCUFSM(EventBus e) {
+    public WindowCUFSM() {
         this.currentState = State.AUTOMATIC;
-        this.eb = e;
     }
 
     public State getState() {
@@ -37,17 +36,20 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     }
 
     public JsonObject handleEvent(JsonObject command) {
-        System.out.println("windowCUFSM: " + command.toString());
         if (command.containsKey("window_state")) {
             String new_state = command.getString("window_state");
+            if (!(Objects.equals(new_state, State.MANUAL.getDescription()))
+                    && !Objects.equals(new_state, State.AUTOMATIC.getDescription())) {
+                return new JsonObject();
+            }
             switch (currentState) {
                 case AUTOMATIC:
-                    if (new_state == State.MANUAL.getDescription()) {
+                    if (Objects.equals(new_state, State.MANUAL.getDescription())) {
                         setState(State.MANUAL);
                     }
                     break;
                 case MANUAL:
-                    if (new_state == State.AUTOMATIC.getDescription()) {
+                    if (Objects.equals(new_state, State.AUTOMATIC.getDescription())) {
                         setState(State.AUTOMATIC);
                     }
                     break;

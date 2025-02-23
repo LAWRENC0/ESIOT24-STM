@@ -1,13 +1,15 @@
 package com.cub.states;
 
+import java.util.Objects;
+
+import com.cub.constants.EventBusAddress;
 import com.cub.utilities.TemperatureRecord;
 
-import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 
 public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> {
-    public static final float T1_celsius = 20;
-    public static final float T2_celsius = 25;
+    public static final float T1_celsius = 25;
+    public static final float T2_celsius = 35;
     public static final long DT_ms = 5000;
     public static final int F1_tps = 1; // times per second
     public static final int F2_tps = 2;
@@ -16,7 +18,7 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
     private static final int N = 15;
 
     public enum State {
-        NORMAL("Normal"), HOT("Hot"), TOO_HOT("Too_Hot"), ALARM("Alarm");
+        NORMAL("normal"), HOT("hot"), TOO_HOT("too_hot"), ALARM("alarm");
 
         private final String description;
 
@@ -30,14 +32,12 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
         }
     }
 
-    private final EventBus eb;
     private long ts;
     private TemperatureRecord temp_record;
     private State currentState;
 
-    public TemperatureCUFSM(EventBus e) {
+    public TemperatureCUFSM() {
         this.currentState = State.NORMAL;
-        this.eb = e;
         this.ts = System.currentTimeMillis();
         this.temp_record = new TemperatureRecord(N);
     }
@@ -54,18 +54,19 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
     }
 
     public JsonObject handleEvent(JsonObject command) {
-        System.out.println("tempCUFSM: " + command.toString());
-        if (command.containsKey("temperature")) {
-            float temp = command.getFloat("temperature");
+        if (command.containsKey(EventBusAddress.TEMP.getAddress())) {
+            float temp = command.getFloat(EventBusAddress.TEMP.getAddress());
             temp_record.addTemperature(temp);
             switch (currentState) {
                 case NORMAL:
                     if (T1_celsius <= temp && T2_celsius >= temp) {
                         setState(State.HOT);
+                    } else if (T2_celsius <= temp) {
+                        setState(State.TOO_HOT);
                     }
                     break;
                 case HOT:
-                    if (T2_celsius < temp) {
+                    if (T2_celsius <= temp) {
                         setState(State.TOO_HOT);
                     } else if (temp < T1_celsius) {
                         setState(State.NORMAL);
@@ -76,6 +77,8 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
                         setState(State.HOT);
                     } else if (System.currentTimeMillis() - this.ts >= DT_ms) {
                         setState(State.ALARM);
+                    } else if (temp < T1_celsius) {
+                        setState(State.NORMAL);
                     }
                     break;
                 case ALARM:
@@ -84,13 +87,16 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
                     System.out.println("State not found");
                     break;
             }
-        } else if (command.containsKey("system_state") && command.getString("system_state") == "normal") {
+        } else if (command.containsKey(EventBusAddress.SYSTEM_STATE.getAddress())
+                && Objects.equals(command.getString(EventBusAddress.SYSTEM_STATE.getAddress()),
+                        State.NORMAL.getDescription())) {
             switch (currentState) {
                 case NORMAL, HOT, TOO_HOT:
                     return new JsonObject();
                 case ALARM:
                     setState(State.NORMAL);
-                    return command;
+                    return new JsonObject().put(EventBusAddress.SYSTEM_STATE.getAddress(),
+                            this.getState().getDescription());
             }
         }
         return tick();
@@ -124,6 +130,7 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
         message.put("angle", angle);
         message.put("temperature",
                 temp_record.getLastTemperature());
+        message.put("system_state", this.getState().getDescription());
         return message;
     }
 
