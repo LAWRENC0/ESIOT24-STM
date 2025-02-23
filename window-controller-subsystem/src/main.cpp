@@ -11,7 +11,8 @@
 
 State* state;
 ServoMotorImpl* servo;
-int servo_door_angle, servo_door_update, servo_door_temp, serial_door_angle;
+int pot_door_temp, pot_door_update;
+int angle_destination;
 float temp;
 Potentiometer* potentiometer;
 UserConsole* lcd;
@@ -35,9 +36,9 @@ void setup() {
     lcd->test();
     button = new ButtonImpl(PIN_BUTTON);
     enableInterrupt(PIN_BUTTON, switchState, RISING);
-    servo_door_update = 0;
+    pot_door_update = 0;
 
-    servo_door_angle = 0;
+    pot_door_temp = 0;
     temp = 0;
 }
 
@@ -48,7 +49,7 @@ void wait(unsigned long time) {
 
 void printToScreen() {
     lcd->clearScreen();
-    lcd->display("Door: " + String(servo_door_angle), 0);
+    lcd->display("Door: " + String(pot_door_temp), 0);
     lcd->display(state->toString(), 1);
     if (state->getValue() == State::Value::MANUAL) {
         lcd->display("Temp: " + String(temp), 2);
@@ -58,13 +59,13 @@ void printToScreen() {
 void loop() {
     disableInterrupt(PIN_BUTTON);
     printToScreen();
-    servo_door_update = 0;
+    pot_door_update = 0;
     if (state->getValue() == State::Value::MANUAL) {
-        servo_door_temp = map(potentiometer->getValue(), 0, 1023, MOTOR_CLOSE, MOTOR_OPEN);
-        if (servo_door_temp != servo_door_angle) {
-            servo_door_angle = servo_door_temp;
-            servo_door_update = 1;
-            MsgService.sendMsg("{\"angle\": " + (String)servo_door_angle + "}");
+        pot_door_temp = map(potentiometer->getValue(), 0, 1023, MOTOR_CLOSE, MOTOR_OPEN);
+        if (pot_door_temp != angle_destination) {
+            angle_destination = pot_door_temp;
+            pot_door_update = 1;
+            MsgService.sendMsg("{\"angle\": " + (String)angle_destination + "}");
         }
     }
     Msg* msg = MsgService.receiveMsg();
@@ -73,8 +74,8 @@ void loop() {
         if (Pattern::matchTemp(receivedMsg)) {
             temp = Pattern::getTemp(receivedMsg);
         } else if (Pattern::matchAngle(receivedMsg)) {
-            if (servo_door_update == 0) {
-                servo_door_angle = Pattern::getAngle(receivedMsg);
+            if (pot_door_update == 0) {
+                angle_destination = Pattern::getAngle(receivedMsg);
             }
         } else if (Pattern::matchState(receivedMsg)) {
             if (Pattern::getState(receivedMsg) == "automatic") {
@@ -87,7 +88,7 @@ void loop() {
     }
 
     // MOVE DOOR
-    servo->moveToPosition(servo_door_angle);
+    servo->moveToPosition(angle_destination);
     enableInterrupt(PIN_BUTTON, switchState, RISING);
     // DISPLAY ON LCD
     wait(TICK_SPEED_MS);

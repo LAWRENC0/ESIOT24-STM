@@ -68,6 +68,14 @@ public class SerialAgentVerticle extends AbstractVerticle {
             // System.out.println(tempMessage);
         });
 
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),
+                message -> {
+                    String wState = (String) message.body();
+                    String toSend = EventBusAddress.WINDOW_STATE.getAddress() + ":" + wState + "\n";
+                    serialPort.writeBytes(toSend.getBytes(), toSend.length());
+                    // System.out.println(tempMessage);
+                });
+
     }
 
     @Override

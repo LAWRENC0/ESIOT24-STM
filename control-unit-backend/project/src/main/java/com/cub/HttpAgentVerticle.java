@@ -124,9 +124,11 @@ public class HttpAgentVerticle extends AbstractVerticle {
             String response = body.getString(EventBusAddress.ANGLE.getAddress()).trim();
             try {
                 int angle = Integer.parseInt(response);
-                currentState.put(EventBusAddress.ANGLE.getAddress(), angle);
-                vertx.eventBus().publish(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.ANGLE),
-                        angle);
+                if (angle >= 0 && angle <= 90) {
+                    currentState.put(EventBusAddress.ANGLE.getAddress(), angle);
+                    vertx.eventBus().publish(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.ANGLE),
+                            angle);
+                }
             } catch (NumberFormatException e) {
                 System.out.println("Unparsable value received from dashboard as angle value");
             }
