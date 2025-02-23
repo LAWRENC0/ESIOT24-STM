@@ -6,4 +6,4 @@
 #define MOTOR_CLOSE 0
 #define MOTOR_OPEN 90
 
-#define TICK_SPEED_MS 10
+#define TICK_SPEED_MS 200
