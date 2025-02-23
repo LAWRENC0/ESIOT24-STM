@@ -11,20 +11,17 @@ import io.vertx.ext.web.handler.StaticHandler;
 
 import java.time.LocalTime;
 import java.util.LinkedList;
+import java.util.Objects;
 import java.util.Queue;
 
 public class HttpAgentVerticle extends AbstractVerticle {
 
     private JsonObject currentState = new JsonObject()
             .put(EventBusAddress.SYSTEM_STATE.getAddress(), "normal")
-            .put(EventBusAddress.ANGLE.getAddress(), 40)
-            .put(EventBusAddress.WINDOW_STATE.getAddress(), "manual")
-            .put("avgTemp", 22.5)
-            .put("maxTemp", 25)
-            .put("minTemp", 20)
+            .put(EventBusAddress.WINDOW_STATE.getAddress(), "automatic")
             .put("graph", new JsonObject().put("labels", new JsonArray()).put("temperatures", new JsonArray()));
 
-    private static final int MAX_GRAPH_POINTS = 10;
+    private static final int MAX_GRAPH_POINTS = 100;
     private final Queue<Double> temperatureHistory = new LinkedList<>();
     private final Queue<String> timeLabels = new LinkedList<>();
 
@@ -48,11 +45,40 @@ public class HttpAgentVerticle extends AbstractVerticle {
             }
         });
 
-        // Listen for updates from the event bus
         vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.SYSTEM_STATE),
                 message -> {
-                    if (message.body() instanceof JsonObject) {
-                        updateSystemState((JsonObject) message.body());
+                    if (message.body() instanceof String) { // Accepts Float, Double, etc.
+                        String sState = ((String) message.body());
+                        JsonObject sStateJson = new JsonObject().put(EventBusAddress.SYSTEM_STATE.getAddress(), sState);
+                        updateSystemState(sStateJson);
+                    }
+                });
+
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),
+                message -> {
+                    if (message.body() instanceof String) { // Accepts Float, Double, etc.
+                        String wState = ((String) message.body());
+                        JsonObject wStateJson = new JsonObject().put(EventBusAddress.WINDOW_STATE.getAddress(), wState);
+                        updateSystemState(wStateJson);
+                    }
+                });
+
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE),
+                message -> {
+                    if (message.body() instanceof Number) { // Accepts Float, Double, etc.
+                        float angle = ((Number) message.body()).intValue();
+                        JsonObject angleJson = new JsonObject().put(EventBusAddress.ANGLE.getAddress(), angle);
+                        updateSystemState(angleJson);
+                    }
+                });
+
+        // Listen for updates from the event bus
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.TEMP),
+                message -> {
+                    if (message.body() instanceof Number) { // Accepts Float, Double, etc.
+                        float temperature = ((Number) message.body()).floatValue();
+                        JsonObject tempJson = new JsonObject().put(EventBusAddress.TEMP.getAddress(), temperature);
+                        updateSystemState(tempJson);
                     }
                 });
     }
@@ -73,29 +99,29 @@ public class HttpAgentVerticle extends AbstractVerticle {
         }
         // SYSTEM STATE
         if (body.containsKey(EventBusAddress.SYSTEM_STATE.getAddress())) {
-            String sState = body.getString(EventBusAddress.SYSTEM_STATE.getAddress());
-            if (sState == "normal") {
+            String sState = body.getString(EventBusAddress.SYSTEM_STATE.getAddress()).trim();
+            if (Objects.equals(sState, "normal")) {
                 currentState.put(EventBusAddress.SYSTEM_STATE.getAddress(), sState);
                 vertx.eventBus().publish(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.SYSTEM_STATE),
                         sState);
             } else {
-                System.out.println("Invalid value for system_state received from dashboard");
+                System.out.println("Invalid value for system_state received from dashboard: " + sState);
             }
         }
         // WINDOW_STATE
         if (body.containsKey(EventBusAddress.WINDOW_STATE.getAddress())) {
-            String wState = body.getString(EventBusAddress.WINDOW_STATE.getAddress());
-            if (wState == "automatic" || wState == "manual") {
+            String wState = body.getString(EventBusAddress.WINDOW_STATE.getAddress()).trim();
+            if (Objects.equals(wState, "automatic") || Objects.equals(wState, "manual")) {
                 currentState.put(EventBusAddress.WINDOW_STATE.getAddress(), wState);
                 vertx.eventBus().publish(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.WINDOW_STATE),
                         wState);
             } else {
-                System.out.println("Invalid value for system_state received from dashboard");
+                System.out.println("Invalid value for system_state received from dashboard: " + wState);
             }
         }
         // ANGLE
         if (body.containsKey(EventBusAddress.ANGLE.getAddress())) {
-            String response = body.getString(EventBusAddress.ANGLE.getAddress());
+            String response = body.getString(EventBusAddress.ANGLE.getAddress()).trim();
             try {
                 int angle = Integer.parseInt(response);
                 currentState.put(EventBusAddress.ANGLE.getAddress(), angle);
@@ -126,10 +152,11 @@ public class HttpAgentVerticle extends AbstractVerticle {
             temperatureHistory.poll();
             timeLabels.poll();
         }
-        temperatureHistory.add(temperature);
+        temperatureHistory.add(Math.floor(temperature * 10) / 10);
         timeLabels.add(LocalTime.now().toString().substring(0, 5)); // HH:mm format
 
-        currentState.put("avgTemp", temperatureHistory.stream().mapToDouble(Double::doubleValue).average().orElse(0));
+        currentState.put("avgTemp",
+                Math.floor(temperatureHistory.stream().mapToDouble(Double::doubleValue).average().orElse(0) * 10) / 10);
         currentState.put("maxTemp", temperatureHistory.stream().mapToDouble(Double::doubleValue).max().orElse(0));
         currentState.put("minTemp", temperatureHistory.stream().mapToDouble(Double::doubleValue).min().orElse(0));
 

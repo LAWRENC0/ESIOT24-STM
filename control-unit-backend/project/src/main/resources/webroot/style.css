@@ -151,6 +151,10 @@ input[type="number"]:disabled {
     background-color: #b52b27;
 }
 
+.button.alarm:disabled {
+    background-color: #9c8786 !important;
+}
+
 /* Responsive Design */
 @media (max-width: 600px) {
     .controls-container {

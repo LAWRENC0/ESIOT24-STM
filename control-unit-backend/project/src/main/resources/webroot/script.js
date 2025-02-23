@@ -3,13 +3,14 @@ const API_URL = "/state";
 
 // Select UI elements
 const systemStateEl = document.getElementById("system_state");
+const alarmButtonEl = document.getElementById("system_state_solve");
 const avgTempEl = document.getElementById("avgTemp");
 const maxTempEl = document.getElementById("maxTemp");
 const minTempEl = document.getElementById("minTemp");
 const windowAngleEl = document.getElementById("angle");
 const windowStateCheckBEl = document.getElementById("window_state");
 const windowStateTextEl = document.getElementById("window_state_text");
-window_state = "automatic";
+let window_state = "automatic";
 
 // Temperature Graph Setup
 let temperatureChart;
@@ -51,6 +52,13 @@ async function fetchSystemState() {
 
         // Update UI with received data
         systemStateEl.textContent = data.system_state;
+        if (data.system_state == "alarm") {
+            systemStateEl.style.color = "red";
+            alarmButtonEl.disabled = false;
+        } else {
+            systemStateEl.style.color = "inherit";
+            alarmButtonEl.disabled = true;
+        }
         avgTempEl.textContent = data.avgTemp;
         maxTempEl.textContent = data.maxTemp;
         minTempEl.textContent = data.minTemp;
@@ -73,11 +81,11 @@ async function fetchSystemState() {
 function changeWindowState() {
     if (window_state == "automatic") {
         windowStateCheckBEl.checked = true;
-        windowStateTextEl.innerText = "Window State: Automatic ";
+        windowStateTextEl.innerText = "Window State: automatic ";
         windowAngleEl.disabled = true;
     } else if (window_state == "manual") {
         windowStateCheckBEl.checked = false;
-        windowStateTextEl.innerText = "Window State: Manual ";
+        windowStateTextEl.innerText = "Window State: manual ";
         windowAngleEl.disabled = false;
     }
 }
@@ -91,13 +99,49 @@ function updateChart(newData) {
     temperatureChart.update();
 }
 
-windowAngleEl.addEventListener("onchange", () => {
+// operatore cambia l'angolo di apertura => inviamo un update
+windowAngleEl.addEventListener("input", () => {
     if (window_state == "manual") {
-
+        // SEND ANGLE VALUE UPDATE
+        let value = windowAngleEl.value;
+        sendControlUpdate({ "angle": value });
     }
 });
+
+windowStateCheckBEl.addEventListener("click", () => {
+    if (window_state == "manual") {
+        window_state = "automatic";
+    } else if (window_state == "automatic") {
+        window_state = "manual";
+    }
+    changeWindowState();
+    sendControlUpdate({ "window_state": window_state });
+});
+
+alarmButtonEl.addEventListener("click", () => {
+    sendControlUpdate({ "system_state": "normal" });
+});
+
+function sendControlUpdate(data) {
+    console.log(data);
+    fetch("/control", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(data)
+    })
+        .then(response => response.json())
+        .then(result => {
+            console.log("Server response:", result);
+        })
+        .catch(error => {
+            console.error("Error sending control update:", error);
+        });
+}
+
 
 // Initialize the chart and start fetching data
 initChart();
 fetchSystemState(); // Fetch initial state
-setInterval(fetchSystemState, 5000); // Poll the backend every 5 seconds
+setInterval(fetchSystemState, 500); // Poll the backend every 5 seconds
