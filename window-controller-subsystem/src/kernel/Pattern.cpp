@@ -24,7 +24,7 @@ boolean Pattern::matchAngle(const String& msg) {
 }
 
 boolean Pattern::matchState(const String& msg) {
-    if (msg == "{window_state: automatic}" || msg == "{window_state: manual}") return true;
+    if (msg.startsWith("window_state:automatic") || msg.startsWith("window_state:manual")) return true;
     return false;
 }
 
@@ -33,6 +33,6 @@ float Pattern::getTemp(const String& msg) { return msg.substring(12, msg.length(
 int Pattern::getAngle(const String& msg) { return msg.substring(6, msg.length()).toInt(); }
 
 String Pattern::getState(const String& msg) {
-    if (msg == "{window_state: automatic}") return "automatic";
-    if (msg == "{window_state: manual}") return "manual";
+    if (msg.startsWith("window_state:automatic")) return "automatic";
+    if (msg.startsWith("window_state:manual")) return "manual";
 }

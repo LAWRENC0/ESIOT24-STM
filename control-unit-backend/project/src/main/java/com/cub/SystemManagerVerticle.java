@@ -66,9 +66,10 @@ public class SystemManagerVerticle extends AbstractVerticle {
             JsonObject windowCommand = new JsonObject();
             windowCommand.put("window_state", window_state);
             JsonObject comm = windowCUFSM.handleEvent(windowCommand);
-            if (comm.containsKey("window_state"))
+            if (comm.containsKey("window_state")) {
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),
                         comm.getString("window_state"));
+            }
         });
 
         // incoming syst_state updates (from DSHB(http))-> triggers the tempCUFSM which
