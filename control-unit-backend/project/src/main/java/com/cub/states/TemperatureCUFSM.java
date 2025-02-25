@@ -33,6 +33,7 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
     }
 
     private long ts;
+    private int angle;
     private TemperatureRecord temp_record;
     private State currentState;
 
@@ -40,6 +41,7 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
         this.currentState = State.NORMAL;
         this.ts = System.currentTimeMillis();
         this.temp_record = new TemperatureRecord(N);
+        this.angle = WINDOW_CLOSED_ANGLE;
     }
 
     public State getState() {
@@ -104,7 +106,6 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
 
     private JsonObject tick() {
         long frequency = 0;
-        int angle = WINDOW_CLOSED_ANGLE;
         switch (currentState) {
             case NORMAL:
                 frequency = F1_tps;
@@ -113,8 +114,9 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
             case HOT:
                 frequency = F2_tps;
                 angle = (int) Math
-                        .round((0.99 / (T2_celsius - T1_celsius)) * (temp_record.getLastTemperature() - T1_celsius)
-                                + 0.01);
+                        .round(((0.99 / (T2_celsius - T1_celsius)) * (temp_record.getLastTemperature() - T1_celsius)
+                                + 0.01) * WINDOW_OPEN_ANGLE);
+                ;
                 break;
             case TOO_HOT:
                 frequency = F2_tps;
@@ -126,15 +128,19 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
                 break;
         }
         JsonObject message = new JsonObject();
-        message.put("frequency", frequency);
-        message.put("angle", angle);
-        message.put("temperature",
+        message.put(EventBusAddress.FREQ.getAddress(), frequency);
+        message.put(EventBusAddress.ANGLE.getAddress(), angle);
+        message.put(EventBusAddress.TEMP.getAddress(),
                 temp_record.getLastTemperature());
-        message.put("system_state", this.getState().getDescription());
+        message.put(EventBusAddress.SYSTEM_STATE.getAddress(), this.getState().getDescription());
         return message;
     }
 
     public void displayStateMessage() {
         System.out.println("Current state: " + currentState.getDescription());
+    }
+
+    public int getAngle() {
+        return this.angle;
     }
 }

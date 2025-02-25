@@ -1,5 +1,7 @@
 package com.cub;
 
+import java.util.Objects;
+
 import com.cub.constants.EventBusAddress;
 import com.cub.states.TemperatureCUFSM;
 import com.cub.states.WindowCUFSM;
@@ -48,9 +50,10 @@ public class SystemManagerVerticle extends AbstractVerticle {
             if (comm.containsKey("frequency"))
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.FREQ),
                         comm.getLong("frequency"));
-            if (comm.containsKey("angle") && windowCUFSM.getState() == WindowCUFSM.State.AUTOMATIC)
+            if (comm.containsKey("angle") && windowCUFSM.getState() == WindowCUFSM.State.AUTOMATIC) {
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE),
                         comm.getInteger("angle"));
+            }
             if (comm.containsKey("system_state"))
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.SYSTEM_STATE),
                         comm.getString("system_state"));
@@ -69,6 +72,12 @@ public class SystemManagerVerticle extends AbstractVerticle {
             if (comm.containsKey("window_state")) {
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),
                         comm.getString("window_state"));
+                // if (Objects.equals(comm.getString("window_state"), "automatic")) {
+                // System.out.println("GOING to AUTO, angle=" + tempCUFSM.getAngle());
+                // eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING,
+                // EventBusAddress.ANGLE),
+                // tempCUFSM.getAngle());
+                // }
             }
         });
 

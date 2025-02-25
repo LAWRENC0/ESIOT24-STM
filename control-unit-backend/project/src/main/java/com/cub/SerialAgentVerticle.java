@@ -29,7 +29,7 @@ public class SerialAgentVerticle extends AbstractVerticle {
         }
 
         // Optionally, read data from the serial port periodically
-        vertx.setPeriodic(300, id -> {
+        vertx.setPeriodic(100, id -> {
             if (serialPort.bytesAvailable() > 0) {
                 byte[] buffer = new byte[serialPort.bytesAvailable()];
                 serialPort.readBytes(buffer, buffer.length);
@@ -65,7 +65,7 @@ public class SerialAgentVerticle extends AbstractVerticle {
             int angle = (int) message.body();
             String toSend = EventBusAddress.ANGLE.getAddress() + ":" + angle + "\n";
             serialPort.writeBytes(toSend.getBytes(), toSend.length());
-            // System.out.println(tempMessage);
+            System.out.println("a = " + toSend);
         });
 
         vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),
