@@ -27,7 +27,6 @@ void switchState() {
         last_hit_time = current_hit_time;
         state_button->switchValue();
         MsgService.sendMsg("{\"window_state\": \"" + state_button->toString() + "\"}");
-        // MsgService.sendMsg(state_button->toString());
     }
 }
 
