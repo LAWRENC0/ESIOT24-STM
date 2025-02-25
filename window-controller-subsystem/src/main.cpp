@@ -92,11 +92,13 @@ void loop() {
             temp = Pattern::getTemp(receivedMsg);
         } else if (Pattern::matchAngle(receivedMsg)) {
             angle_netw = Pattern::getAngle(receivedMsg);
-            angle_netw_upd = 1;
+            if (angle != angle_netw) {
+                angle_netw_upd = 10;
+            }
         } else if (Pattern::matchState(receivedMsg)) {
             if (Pattern::getState(receivedMsg) == F("automatic")) {
                 state_network->setValue(State::Value::AUTOMATIC);
-            } else if (Pattern::getState(receivedMsg) == F("manual")) {
+            } else if (Pattern::getState(receivedMsg) == "manual") {
                 state_network->setValue(State::Value::MANUAL);
             }
         }
@@ -104,19 +106,21 @@ void loop() {
     }
     if (state_network->getValue() == State::Value::MANUAL) {
         int angle_pot_temp = map(potentiometer->getValue(), 0, 1023, MOTOR_CLOSE, MOTOR_OPEN);
-        if (angle_pot_temp != angle_pot && angle_netw_upd == 0) {
+        if (abs(angle_pot_temp - angle_pot) > 4 && angle_netw_upd == 0) {
             angle_pot = angle_pot_temp;
             angle_pot_upd = 1;
         }
     }
 
     // MOVE DOOR
-    if (angle_netw_upd == 1) angle = angle_netw;
-    if (angle_pot_upd == 1) {
-        angle = angle_pot;
+    if (angle_netw_upd > 0) {
+        angle = angle_netw;
+        angle_netw--;
     }
-    if (angle_netw_upd == 1 || angle_pot_upd == 1) {
-        MsgService.sendMsg("{\"angle\": " + (String)angle + "}");
+    if (angle_pot_upd == 1 && angle_netw_upd == 0) {
+        MsgService.sendMsg("{\"angle\": " + (String)angle_pot + "}");
+    }
+    if (angle_netw_upd > 0 || angle_pot_upd == 1) {
         servo->moveToPosition(angle);
     }
     // DISPLAY ON LCD
