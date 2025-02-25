@@ -16,7 +16,6 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 TaskHandle_t NetworkTask;
 
-// FreeRTOS queues for shared variables
 QueueHandle_t temperatureQueue, frequencyQueue, networkStateQueue;
 
 Led* red_led;
@@ -43,7 +42,7 @@ void setup_wifi() {
 
 void callback(char* topic, byte* payload, unsigned int length) {
   if (strcmp(topic, frequency_topic) == 0) {
-    long freq = atol((char*)payload);  // Convert payload to long
+    long freq = atol((char*)payload); 
     Serial.println(String("Received new frequency: ") + freq);
     xQueueSend(frequencyQueue, &freq, 0);
   }
@@ -79,26 +78,24 @@ void setup() {
   leds->setState(TwoLedMonitor::State::AVAILABLE);
   temp_sensor = new TempSensor(PIN_TEMP_SENSOR);
   net_state = false;
-  frequency_s = DEFAULT_FREQUENCY_S;
+  frequency_s = DEFAULT_FREQUENCY_TPM;
 
-  // Create FreeRTOS queues
   temperatureQueue = xQueueCreate(10, sizeof(float));
   frequencyQueue = xQueueCreate(5, sizeof(long));
   networkStateQueue = xQueueCreate(5, sizeof(bool));
 
   if (!temperatureQueue || !frequencyQueue || !networkStateQueue) {
     Serial.println("Queue creation failed!");
-    while (1);  // Stop execution if queue creation fails
+    while (1);
   }
 
-  // Start network task on Core 0
   xTaskCreatePinnedToCore(NetworkTaskCode, "NetworkTask", 10000, NULL, 1, &NetworkTask, 0);
   delay(500);
 }
 
 void NetworkTaskCode(void* parameter) {
   float temp;
-  long freq = DEFAULT_FREQUENCY_S;
+  long freq = DEFAULT_FREQUENCY_TPM;
   bool network_state = false;
 
   for (;;) {
@@ -122,7 +119,7 @@ void NetworkTaskCode(void* parameter) {
       Serial.println("Received frquency value");
     }
 
-    vTaskDelay(freq * 5000 / portTICK_PERIOD_MS);
+    vTaskDelay((60 / freq) * 1000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -143,5 +140,5 @@ void loop() {
     leds->setState(net_state ? TwoLedMonitor::State::AVAILABLE : TwoLedMonitor::State::UNAVAILABLE);
   }
 
-  vTaskDelay(frequency_s * 5000 / portTICK_PERIOD_MS);
+  vTaskDelay((60 / frequency_s) * 1000 / portTICK_PERIOD_MS);
 }

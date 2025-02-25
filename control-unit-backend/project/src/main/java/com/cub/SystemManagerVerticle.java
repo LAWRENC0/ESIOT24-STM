@@ -1,7 +1,5 @@
 package com.cub;
 
-import java.util.Objects;
-
 import com.cub.constants.EventBusAddress;
 import com.cub.states.TemperatureCUFSM;
 import com.cub.states.WindowCUFSM;

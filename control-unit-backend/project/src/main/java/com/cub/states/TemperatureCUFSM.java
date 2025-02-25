@@ -11,8 +11,8 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
     public static final float T1_celsius = 25;
     public static final float T2_celsius = 35;
     public static final long DT_ms = 5000;
-    public static final int F1_tps = 1; // times per second
-    public static final int F2_tps = 2;
+    public static final int F1_tpm = 6; // times per minute
+    public static final int F2_tpm = 12;
     public static final int WINDOW_CLOSED_ANGLE = 0;
     public static final int WINDOW_OPEN_ANGLE = 90;
     private static final int N = 15;
@@ -108,22 +108,22 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
         long frequency = 0;
         switch (currentState) {
             case NORMAL:
-                frequency = F1_tps;
+                frequency = F1_tpm;
                 angle = WINDOW_CLOSED_ANGLE;
                 break;
             case HOT:
-                frequency = F2_tps;
+                frequency = F2_tpm;
                 angle = (int) Math
                         .round(((0.99 / (T2_celsius - T1_celsius)) * (temp_record.getLastTemperature() - T1_celsius)
                                 + 0.01) * WINDOW_OPEN_ANGLE);
                 ;
                 break;
             case TOO_HOT:
-                frequency = F2_tps;
+                frequency = F2_tpm;
                 angle = WINDOW_OPEN_ANGLE;
                 break;
             case ALARM:
-                frequency = F2_tps;
+                frequency = F2_tpm;
                 angle = WINDOW_OPEN_ANGLE;
                 break;
         }
