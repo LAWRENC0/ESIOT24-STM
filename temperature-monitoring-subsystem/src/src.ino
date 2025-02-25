@@ -122,7 +122,7 @@ void NetworkTaskCode(void* parameter) {
       Serial.println("Received frquency value");
     }
 
-    vTaskDelay(freq * 1000 / portTICK_PERIOD_MS);
+    vTaskDelay(freq * 5000 / portTICK_PERIOD_MS);
   }
 }
 
@@ -143,5 +143,5 @@ void loop() {
     leds->setState(net_state ? TwoLedMonitor::State::AVAILABLE : TwoLedMonitor::State::UNAVAILABLE);
   }
 
-  vTaskDelay(frequency_s * 1000 / portTICK_PERIOD_MS);
+  vTaskDelay(frequency_s * 5000 / portTICK_PERIOD_MS);
 }
