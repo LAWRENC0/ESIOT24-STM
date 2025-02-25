@@ -44,9 +44,15 @@ public class SystemManagerVerticle extends AbstractVerticle {
             tempCommand.put("temperature", temperature);
             JsonObject comm = tempCUFSM.handleEvent(tempCommand);
             // in MANUAL mode the ANGLE must NOT be updated by the TempCUFSM
-            if (comm.containsKey("temperature"))
-                eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.TEMP),
-                        comm.getFloat("temperature"));
+            if (comm.containsKey("temperature")) {
+                if (windowCUFSM.getState() == WindowCUFSM.State.MANUAL) {
+                    eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.TEMP),
+                            comm.getFloat("temperature"));
+                } else if (windowCUFSM.getState() == WindowCUFSM.State.AUTOMATIC) {
+                    eb.publish(EventBusAddress.concat(EventBusAddress.DASHBOARD, EventBusAddress.TEMP),
+                            comm.getFloat("temperature"));
+                }
+            }
             if (comm.containsKey("frequency"))
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.FREQ),
                         comm.getLong("frequency"));
@@ -61,7 +67,9 @@ public class SystemManagerVerticle extends AbstractVerticle {
 
         // INCOMING window_state updates (from WCS(Serial), DSHB(http))->triggers the
         // windowCUFSM, which dtermines an update in window_state
-        eb.consumer(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.WINDOW_STATE), message -> {
+        eb.consumer(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.WINDOW_STATE), message ->
+
+        {
             String window_state = (String) message.body();
             // System.out.println("Received temperature: " + temperature);
 

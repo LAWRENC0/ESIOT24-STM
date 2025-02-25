@@ -15,6 +15,7 @@ public class SerialAgentVerticle extends AbstractVerticle {
     private static final int BAUD_RATE = 9600;
     private static final String COMM_PORT = "COM7";
     private SerialPort serialPort;
+    private StringBuilder serialBuffer = new StringBuilder(); // Buffer for accumulating data
 
     @Override
     public void start() {
@@ -29,28 +30,39 @@ public class SerialAgentVerticle extends AbstractVerticle {
         }
 
         // Optionally, read data from the serial port periodically
-        vertx.setPeriodic(100, id -> {
+        // vertx.setPeriodic(100, id -> {
+        // if (serialPort.bytesAvailable() > 0) {
+        // byte[] buffer = new byte[serialPort.bytesAvailable()];
+        // serialPort.readBytes(buffer, buffer.length);
+        // String serialResponse = new String(buffer).trim();
+        // System.out.println("REC: " + serialResponse);
+        // if (!serialResponse.isEmpty() && isValidJson(serialResponse)) {
+        // try {
+        // JsonObject response = new JsonObject(serialResponse);
+        // if (response.containsKey(EventBusAddress.WINDOW_STATE.getAddress())) {
+        // vertx.eventBus().publish(
+        // EventBusAddress.concat(EventBusAddress.INCOMING,
+        // EventBusAddress.WINDOW_STATE),
+        // response.getString(EventBusAddress.WINDOW_STATE.getAddress()));
+        // } else if (response.containsKey(EventBusAddress.ANGLE.getAddress())) {
+        // vertx.eventBus().publish(
+        // EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.ANGLE),
+        // response.getInteger(EventBusAddress.ANGLE.getAddress()));
+        // }
+        // } catch (DecodeException e) {
+        // System.out.println("Decode Exception in SerialAgent");
+        // }
+        // }
+        // }
+        // });
+
+        vertx.setPeriodic(50, id -> {
             if (serialPort.bytesAvailable() > 0) {
                 byte[] buffer = new byte[serialPort.bytesAvailable()];
                 serialPort.readBytes(buffer, buffer.length);
                 String serialResponse = new String(buffer).trim();
-                System.out.println("REC: " + serialResponse);
-                if (!serialResponse.isEmpty() && isValidJson(serialResponse)) {
-                    try {
-                        JsonObject response = new JsonObject(serialResponse);
-                        if (response.containsKey(EventBusAddress.WINDOW_STATE.getAddress())) {
-                            vertx.eventBus().publish(
-                                    EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.WINDOW_STATE),
-                                    response.getString(EventBusAddress.WINDOW_STATE.getAddress()));
-                        } else if (response.containsKey(EventBusAddress.ANGLE.getAddress())) {
-                            vertx.eventBus().publish(
-                                    EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.ANGLE),
-                                    response.getInteger(EventBusAddress.ANGLE.getAddress()));
-                        }
-                    } catch (DecodeException e) {
-                        System.out.println("Decode Exception in SerialAgent");
-                    }
-                }
+                serialBuffer.append(serialResponse); // Accumulate data
+                processSerialBuffer();
             }
         });
 
@@ -76,6 +88,33 @@ public class SerialAgentVerticle extends AbstractVerticle {
                     // System.out.println(tempMessage);
                 });
 
+    }
+
+    private void processSerialBuffer() {
+        while (serialBuffer.indexOf("}") != -1) { // While there's a complete message
+            int endIndex = serialBuffer.indexOf("}");
+            String message = serialBuffer.substring(0, endIndex + 1).trim(); // Extract one full message
+            serialBuffer.delete(0, endIndex + 1); // Remove processed message from buffer
+            System.out.println(message);
+            if (!message.isEmpty() && isValidJson(message)) {
+                try {
+                    JsonObject response = new JsonObject(message);
+                    if (response.containsKey(EventBusAddress.WINDOW_STATE.getAddress())) {
+                        vertx.eventBus().publish(
+                                EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.WINDOW_STATE),
+                                response.getString(EventBusAddress.WINDOW_STATE.getAddress()));
+                    } else if (response.containsKey(EventBusAddress.ANGLE.getAddress())) {
+                        vertx.eventBus().publish(
+                                EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.ANGLE),
+                                response.getInteger(EventBusAddress.ANGLE.getAddress()));
+                    }
+                } catch (DecodeException e) {
+                    System.out.println("Decode Exception in SerialAgent: " + message);
+                }
+            } else {
+                System.out.println("Invalid or Incomplete Message Discarded: " + message);
+            }
+        }
     }
 
     @Override
