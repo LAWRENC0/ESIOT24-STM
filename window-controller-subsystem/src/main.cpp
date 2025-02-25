@@ -9,26 +9,33 @@
 #include "devices/consoles/UserConsole.hpp"
 #include "devices/buttons/ButtonImpl.hpp"
 
-State* state;
+State *state_button, *state_network;
 ServoMotorImpl* servo;
-int pot_door_temp, pot_door_update;
-int angle_destination;
+int angle_pot, angle_netw, angle;
+int angle_pot_upd, angle_netw_upd;
 float temp;
+int loop_counter;
 Potentiometer* potentiometer;
 UserConsole* lcd;
 ButtonImpl* button;
-String receivedMsg = "";
+String receivedMsg;
 
 void switchState() {
-    state->switchValue();
-    MsgService.sendMsg("{\"window_state\": \"" + state->toString() + "\"}");
-    // MsgService.sendMsg(state->toString());
+    static unsigned long last_hit_time = 0;
+    unsigned long current_hit_time = millis();
+    if (current_hit_time - last_hit_time > BOUNCE_TIME) {
+        last_hit_time = current_hit_time;
+        state_button->switchValue();
+        MsgService.sendMsg("{\"window_state\": \"" + state_button->toString() + "\"}");
+        // MsgService.sendMsg(state_button->toString());
+    }
 }
 
 void setup() {
     Serial.begin(BAUD_RATE);
     MsgService.init(BAUD_RATE);
-    state = new State();
+    state_button = new State();
+    state_network = new State();
     servo = new ServoMotorImpl(PIN_SERVO, TICK_SPEED_MS, MOTOR_OPEN);
     potentiometer = new Potentiometer(PIN_POT);
     lcd = new UserConsole();
@@ -36,10 +43,24 @@ void setup() {
     lcd->test();
     button = new ButtonImpl(PIN_BUTTON);
     enableInterrupt(PIN_BUTTON, switchState, RISING);
-    pot_door_update = 0;
-
-    pot_door_temp = 0;
+    angle_pot_upd = 0;
+    angle_netw_upd = 0;
+    angle_pot = 0;
+    angle_netw = 0;
+    long ts = millis();
+    for (; millis() - ts < 1000;) {
+        servo->moveToPosition(MOTOR_OPEN);
+        delay(50);
+    }
+    ts = millis();
+    for (; millis() - ts < 1000;) {
+        servo->moveToPosition(MOTOR_CLOSE);
+        delay(50);
+    }
     temp = 0;
+    loop_counter = 0;
+    receivedMsg.reserve(128);
+    receivedMsg = "";
 }
 
 void wait(unsigned long time) {
@@ -49,47 +70,55 @@ void wait(unsigned long time) {
 
 void printToScreen() {
     lcd->clearScreen();
-    lcd->display("Door: " + String(pot_door_temp), 0);
-    lcd->display(state->toString(), 1);
-    if (state->getValue() == State::Value::MANUAL) {
+    lcd->display("Door: " + String(angle), 0);
+    lcd->display(state_network->toString(), 1);
+    if (state_network->getValue() == State::Value::MANUAL) {
         lcd->display("Temp: " + String(temp), 2);
     }
 }
 
 void loop() {
     disableInterrupt(PIN_BUTTON);
-    printToScreen();
-    pot_door_update = 0;
-    if (state->getValue() == State::Value::MANUAL) {
-        pot_door_temp = map(potentiometer->getValue(), 0, 1023, MOTOR_CLOSE, MOTOR_OPEN);
-        if (pot_door_temp != angle_destination) {
-            angle_destination = pot_door_temp;
-            pot_door_update = 1;
-            MsgService.sendMsg("{\"angle\": " + (String)angle_destination + "}");
-        }
-    }
+    state_button->setValue(state_network->getValue());
+    enableInterrupt(PIN_BUTTON, switchState, RISING);
+    angle_netw_upd = 0;
+    angle_pot_upd = 0;
+    if ((++loop_counter) % 5 == 0) printToScreen();
     Msg* msg = MsgService.receiveMsg();
     if (msg != NULL) {
         receivedMsg = msg->getContent();
+        delete msg;
         if (Pattern::matchTemp(receivedMsg)) {
             temp = Pattern::getTemp(receivedMsg);
         } else if (Pattern::matchAngle(receivedMsg)) {
-            if (pot_door_update == 0) {
-                angle_destination = Pattern::getAngle(receivedMsg);
-            }
+            angle_netw = Pattern::getAngle(receivedMsg);
+            angle_netw_upd = 1;
         } else if (Pattern::matchState(receivedMsg)) {
-            if (Pattern::getState(receivedMsg) == "automatic") {
-                state->setValue(State::Value::AUTOMATIC);
-            } else if (Pattern::getState(receivedMsg) == "manual") {
-                state->setValue(State::Value::MANUAL);
+            if (Pattern::getState(receivedMsg) == F("automatic")) {
+                state_network->setValue(State::Value::AUTOMATIC);
+            } else if (Pattern::getState(receivedMsg) == F("manual")) {
+                state_network->setValue(State::Value::MANUAL);
             }
         }
-        delete msg;
+        while (Serial.available()) Serial.read();
+    }
+    if (state_network->getValue() == State::Value::MANUAL) {
+        int angle_pot_temp = map(potentiometer->getValue(), 0, 1023, MOTOR_CLOSE, MOTOR_OPEN);
+        if (angle_pot_temp != angle_pot && angle_netw_upd == 0) {
+            angle_pot = angle_pot_temp;
+            angle_pot_upd = 1;
+        }
     }
 
     // MOVE DOOR
-    servo->moveToPosition(angle_destination);
-    enableInterrupt(PIN_BUTTON, switchState, RISING);
+    if (angle_netw_upd == 1) angle = angle_netw;
+    if (angle_pot_upd == 1) {
+        angle = angle_pot;
+    }
+    if (angle_netw_upd == 1 || angle_pot_upd == 1) {
+        MsgService.sendMsg("{\"angle\": " + (String)angle + "}");
+        servo->moveToPosition(angle);
+    }
     // DISPLAY ON LCD
     wait(TICK_SPEED_MS);
 }

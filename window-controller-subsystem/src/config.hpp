@@ -6,4 +6,6 @@
 #define MOTOR_CLOSE 0
 #define MOTOR_OPEN 90
 
-#define TICK_SPEED_MS 200
+#define TICK_SPEED_MS 100
+
+#define BOUNCE_TIME 60
