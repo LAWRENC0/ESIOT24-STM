@@ -15,11 +15,10 @@ public class SerialAgentVerticle extends AbstractVerticle {
     private static final int BAUD_RATE = 9600;
     private static final String COMM_PORT = "COM7";
     private SerialPort serialPort;
-    private StringBuilder serialBuffer = new StringBuilder(); // Buffer for accumulating data
+    private StringBuilder serialBuffer = new StringBuilder();
 
     @Override
     public void start() {
-        // Open your serial port (adjust port name and settings as needed)
         serialPort = SerialPort.getCommPort(COMM_PORT);
         serialPort.setBaudRate(BAUD_RATE);
         if (!serialPort.openPort()) {
@@ -28,33 +27,6 @@ public class SerialAgentVerticle extends AbstractVerticle {
         } else {
             System.out.println("Opened serial port: " + COMM_PORT);
         }
-
-        // Optionally, read data from the serial port periodically
-        // vertx.setPeriodic(100, id -> {
-        // if (serialPort.bytesAvailable() > 0) {
-        // byte[] buffer = new byte[serialPort.bytesAvailable()];
-        // serialPort.readBytes(buffer, buffer.length);
-        // String serialResponse = new String(buffer).trim();
-        // System.out.println("REC: " + serialResponse);
-        // if (!serialResponse.isEmpty() && isValidJson(serialResponse)) {
-        // try {
-        // JsonObject response = new JsonObject(serialResponse);
-        // if (response.containsKey(EventBusAddress.WINDOW_STATE.getAddress())) {
-        // vertx.eventBus().publish(
-        // EventBusAddress.concat(EventBusAddress.INCOMING,
-        // EventBusAddress.WINDOW_STATE),
-        // response.getString(EventBusAddress.WINDOW_STATE.getAddress()));
-        // } else if (response.containsKey(EventBusAddress.ANGLE.getAddress())) {
-        // vertx.eventBus().publish(
-        // EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.ANGLE),
-        // response.getInteger(EventBusAddress.ANGLE.getAddress()));
-        // }
-        // } catch (DecodeException e) {
-        // System.out.println("Decode Exception in SerialAgent");
-        // }
-        // }
-        // }
-        // });
 
         vertx.setPeriodic(50, id -> {
             if (serialPort.bytesAvailable() > 0) {
