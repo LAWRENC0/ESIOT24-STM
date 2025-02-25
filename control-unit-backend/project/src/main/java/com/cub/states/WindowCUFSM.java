@@ -2,6 +2,8 @@ package com.cub.states;
 
 import java.util.Objects;
 
+import com.cub.constants.EventBusAddress;
+
 import io.vertx.core.json.JsonObject;
 
 public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
@@ -36,8 +38,8 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
     }
 
     public JsonObject handleEvent(JsonObject command) {
-        if (command.containsKey("window_state")) {
-            String new_state = command.getString("window_state");
+        if (command.containsKey(EventBusAddress.WINDOW_STATE.getAddress())) {
+            String new_state = command.getString(EventBusAddress.WINDOW_STATE.getAddress());
             if (!(Objects.equals(new_state, State.MANUAL.getDescription()))
                     && !Objects.equals(new_state, State.AUTOMATIC.getDescription())) {
                 return new JsonObject();
@@ -55,14 +57,14 @@ public class WindowCUFSM implements ControlUnitFSM<WindowCUFSM.State> {
                     break;
             }
             JsonObject message = new JsonObject();
-            message.put("window_state",
+            message.put(EventBusAddress.WINDOW_STATE.getAddress(),
                     this.getState().getDescription());
             return message;
-        } else if (command.containsKey("angle")) {
-            int angle = command.getInteger("angle");
+        } else if (command.containsKey(EventBusAddress.ANGLE.getAddress())) {
+            int angle = command.getInteger(EventBusAddress.ANGLE.getAddress());
             this.door_angle = angle;
             JsonObject message = new JsonObject();
-            message.put("angle", this.door_angle);
+            message.put(EventBusAddress.ANGLE.getAddress(), this.door_angle);
             return message;
         } else {
             return new JsonObject();

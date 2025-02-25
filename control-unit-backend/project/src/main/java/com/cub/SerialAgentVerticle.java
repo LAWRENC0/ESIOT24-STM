@@ -49,7 +49,7 @@ public class SerialAgentVerticle extends AbstractVerticle {
             int angle = (int) message.body();
             String toSend = EventBusAddress.ANGLE.getAddress() + ":" + angle + "\n";
             serialPort.writeBytes(toSend.getBytes(), toSend.length());
-            System.out.println("a = " + toSend);
+            // System.out.println("a = " + toSend);
         });
 
         vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),

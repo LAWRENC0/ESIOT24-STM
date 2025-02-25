@@ -11,8 +11,8 @@ public class TemperatureCUFSM implements ControlUnitFSM<TemperatureCUFSM.State> 
     public static final float T1_celsius = 25;
     public static final float T2_celsius = 35;
     public static final long DT_ms = 5000;
-    public static final int F1_tpm = 6; // times per minute
-    public static final int F2_tpm = 12;
+    public static final int F1_tpm = 20; // times per minute
+    public static final int F2_tpm = 60;
     public static final int WINDOW_CLOSED_ANGLE = 0;
     public static final int WINDOW_OPEN_ANGLE = 90;
     private static final int N = 15;

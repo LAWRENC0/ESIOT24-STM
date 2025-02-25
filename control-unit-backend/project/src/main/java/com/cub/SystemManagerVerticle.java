@@ -35,32 +35,30 @@ public class SystemManagerVerticle extends AbstractVerticle {
         // is in auto mode
         eb.consumer(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.TEMP), message -> {
             float temperature = (Float) message.body();
-            // System.out.println("Received temperature: " + temperature);
-
-            // Process temperature data (determine state, thresholds, etc.)
             JsonObject tempCommand = new JsonObject();
-            tempCommand.put("temperature", temperature);
+            tempCommand.put(EventBusAddress.TEMP.getAddress(), temperature);
             JsonObject comm = tempCUFSM.handleEvent(tempCommand);
             // in MANUAL mode the ANGLE must NOT be updated by the TempCUFSM
-            if (comm.containsKey("temperature")) {
+            if (comm.containsKey(EventBusAddress.TEMP.getAddress())) {
                 if (windowCUFSM.getState() == WindowCUFSM.State.MANUAL) {
                     eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.TEMP),
-                            comm.getFloat("temperature"));
+                            comm.getFloat(EventBusAddress.TEMP.getAddress()));
                 } else if (windowCUFSM.getState() == WindowCUFSM.State.AUTOMATIC) {
                     eb.publish(EventBusAddress.concat(EventBusAddress.DASHBOARD, EventBusAddress.TEMP),
-                            comm.getFloat("temperature"));
+                            comm.getFloat(EventBusAddress.TEMP.getAddress()));
                 }
             }
-            if (comm.containsKey("frequency"))
+            if (comm.containsKey(EventBusAddress.FREQ.getAddress()))
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.FREQ),
-                        comm.getLong("frequency"));
-            if (comm.containsKey("angle") && windowCUFSM.getState() == WindowCUFSM.State.AUTOMATIC) {
+                        comm.getInteger(EventBusAddress.FREQ.getAddress()));
+            if (comm.containsKey(EventBusAddress.ANGLE.getAddress())
+                    && windowCUFSM.getState() == WindowCUFSM.State.AUTOMATIC) {
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE),
-                        comm.getInteger("angle"));
+                        comm.getInteger(EventBusAddress.ANGLE.getAddress()));
             }
-            if (comm.containsKey("system_state"))
+            if (comm.containsKey(EventBusAddress.SYSTEM_STATE.getAddress()))
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.SYSTEM_STATE),
-                        comm.getString("system_state"));
+                        comm.getString(EventBusAddress.SYSTEM_STATE.getAddress()));
         });
 
         // INCOMING window_state updates (from WCS(Serial), DSHB(http))->triggers the
@@ -69,21 +67,12 @@ public class SystemManagerVerticle extends AbstractVerticle {
 
         {
             String window_state = (String) message.body();
-            // System.out.println("Received temperature: " + temperature);
-
-            // Process temperature data (determine state, thresholds, etc.)
             JsonObject windowCommand = new JsonObject();
-            windowCommand.put("window_state", window_state);
+            windowCommand.put(EventBusAddress.WINDOW_STATE.getAddress(), window_state);
             JsonObject comm = windowCUFSM.handleEvent(windowCommand);
-            if (comm.containsKey("window_state")) {
+            if (comm.containsKey(EventBusAddress.WINDOW_STATE.getAddress())) {
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.WINDOW_STATE),
-                        comm.getString("window_state"));
-                // if (Objects.equals(comm.getString("window_state"), "automatic")) {
-                // System.out.println("GOING to AUTO, angle=" + tempCUFSM.getAngle());
-                // eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING,
-                // EventBusAddress.ANGLE),
-                // tempCUFSM.getAngle());
-                // }
+                        comm.getString(EventBusAddress.WINDOW_STATE.getAddress()));
             }
         });
 
@@ -92,11 +81,11 @@ public class SystemManagerVerticle extends AbstractVerticle {
         eb.consumer(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.SYSTEM_STATE), message -> {
             String system_state = (String) message.body();
             JsonObject ssCommand = new JsonObject();
-            ssCommand.put("system_state", system_state);
+            ssCommand.put(EventBusAddress.SYSTEM_STATE.getAddress(), system_state);
             JsonObject comm = tempCUFSM.handleEvent(ssCommand);
-            if (comm.containsKey("system_state")) {
+            if (comm.containsKey(EventBusAddress.SYSTEM_STATE.getAddress())) {
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.SYSTEM_STATE),
-                        comm.getValue("system_state"));
+                        comm.getValue(EventBusAddress.SYSTEM_STATE.getAddress()));
             }
         });
 
@@ -104,13 +93,12 @@ public class SystemManagerVerticle extends AbstractVerticle {
         // which if is in manual mode determines an update in angle
         eb.consumer(EventBusAddress.concat(EventBusAddress.INCOMING, EventBusAddress.ANGLE), message -> {
             int angle = (int) message.body();
-
             JsonObject angleCommand = new JsonObject();
-            angleCommand.put("angle", angle);
+            angleCommand.put(EventBusAddress.ANGLE.getAddress(), angle);
             JsonObject comm = windowCUFSM.handleEvent(angleCommand);
-            if (comm.containsKey("angle"))
+            if (comm.containsKey(EventBusAddress.ANGLE.getAddress()))
                 eb.publish(EventBusAddress.concat(EventBusAddress.OUTGOING, EventBusAddress.ANGLE),
-                        comm.getInteger("angle"));
+                        comm.getInteger(EventBusAddress.ANGLE.getAddress()));
         });
     }
 
