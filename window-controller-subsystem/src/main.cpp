@@ -11,13 +11,13 @@
 
 State *state_button, *state_network;
 ServoMotorImpl* servo;
+Potentiometer* potentiometer;
+UserConsole* lcd;
+ButtonImpl* button;
 int angle_pot, angle_netw, angle;
 int angle_pot_upd, angle_netw_upd;
 float temp;
 int loop_counter;
-Potentiometer* potentiometer;
-UserConsole* lcd;
-ButtonImpl* button;
 String receivedMsg;
 
 void switchState() {
@@ -47,6 +47,7 @@ void setup() {
     angle_netw_upd = 0;
     angle_pot = 0;
     angle_netw = 0;
+    angle = 0;
     long ts = millis();
     for (; millis() - ts < 1000;) {
         servo->moveToPosition(MOTOR_OPEN);
@@ -81,13 +82,14 @@ void loop() {
     disableInterrupt(PIN_BUTTON);
     state_button->setValue(state_network->getValue());
     enableInterrupt(PIN_BUTTON, switchState, RISING);
-    angle_netw_upd = 0;
     angle_pot_upd = 0;
-    if ((++loop_counter) % 5 == 0) printToScreen();
+
     Msg* msg = MsgService.receiveMsg();
     if (msg != NULL) {
         receivedMsg = msg->getContent();
         delete msg;
+        // lcd->clearScreen();
+        // lcd->display((String)receivedMsg, 0);
         if (Pattern::matchTemp(receivedMsg)) {
             temp = Pattern::getTemp(receivedMsg);
         } else if (Pattern::matchAngle(receivedMsg)) {
@@ -104,6 +106,7 @@ void loop() {
         }
         while (Serial.available()) Serial.read();
     }
+
     if (state_network->getValue() == State::Value::MANUAL) {
         int angle_pot_temp = map(potentiometer->getValue(), 0, 1023, MOTOR_CLOSE, MOTOR_OPEN);
         if (abs(angle_pot_temp - angle_pot) > 4 && angle_netw_upd == 0) {
@@ -115,7 +118,7 @@ void loop() {
     // MOVE DOOR
     if (angle_netw_upd > 0) {
         angle = angle_netw;
-        angle_netw--;
+        angle_netw_upd--;
     }
     if (angle_pot_upd == 1 && angle_netw_upd == 0) {
         MsgService.sendMsg("{\"angle\": " + (String)angle_pot + "}");
@@ -123,6 +126,8 @@ void loop() {
     if (angle_netw_upd > 0 || angle_pot_upd == 1) {
         servo->moveToPosition(angle);
     }
+    loop_counter = (loop_counter + 1) % 5;
+    if (loop_counter == 0) printToScreen();
     // DISPLAY ON LCD
     wait(TICK_SPEED_MS);
 }
