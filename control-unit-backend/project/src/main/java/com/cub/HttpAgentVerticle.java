@@ -152,8 +152,8 @@ public class HttpAgentVerticle extends AbstractVerticle {
         currentState.mergeIn(newState);
 
         // Update graph with new temperature if available
-        if (newState.containsKey("temperature")) {
-            double temp = newState.getDouble("temperature");
+        if (newState.containsKey(EventBusAddress.TEMP.getAddress())) {
+            double temp = newState.getDouble(EventBusAddress.TEMP.getAddress());
             addTemperatureData(temp);
         }
     }

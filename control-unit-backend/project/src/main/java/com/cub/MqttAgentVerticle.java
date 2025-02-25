@@ -53,7 +53,7 @@ public class MqttAgentVerticle extends AbstractVerticle {
             if (client != null && client.isConnected()) {
                 client.publish(
                         FREQ_TOPIC,
-                        Buffer.buffer(String.valueOf((Long) message.body())),
+                        Buffer.buffer(String.valueOf((int) message.body())),
                         MqttQoS.AT_LEAST_ONCE,
                         false,
                         false,
