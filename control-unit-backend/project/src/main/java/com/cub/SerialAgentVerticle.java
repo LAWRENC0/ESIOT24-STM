@@ -67,7 +67,7 @@ public class SerialAgentVerticle extends AbstractVerticle {
             int endIndex = serialBuffer.indexOf("}");
             String message = serialBuffer.substring(0, endIndex + 1).trim(); // Extract one full message
             serialBuffer.delete(0, endIndex + 1); // Remove processed message from buffer
-            System.out.println(message);
+            // System.out.println(message);
             if (!message.isEmpty() && isValidJson(message)) {
                 try {
                     JsonObject response = new JsonObject(message);
