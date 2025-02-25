@@ -81,6 +81,16 @@ public class HttpAgentVerticle extends AbstractVerticle {
                         updateSystemState(tempJson);
                     }
                 });
+
+        // Listen for updates from the event bus
+        vertx.eventBus().consumer(EventBusAddress.concat(EventBusAddress.DASHBOARD, EventBusAddress.TEMP),
+                message -> {
+                    if (message.body() instanceof Number) { // Accepts Float, Double, etc.
+                        float temperature = ((Number) message.body()).floatValue();
+                        JsonObject tempJson = new JsonObject().put(EventBusAddress.TEMP.getAddress(), temperature);
+                        updateSystemState(tempJson);
+                    }
+                });
     }
 
     // Handle GET /state

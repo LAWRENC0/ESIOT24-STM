@@ -6,6 +6,7 @@ public enum EventBusAddress {
     WINDOW_STATE("window_state"),
     SYSTEM_STATE("system_state"),
     ANGLE("angle"),
+    DASHBOARD("dashboard"),
     INCOMING("incoming"),
     OUTGOING("outgoing");
 
