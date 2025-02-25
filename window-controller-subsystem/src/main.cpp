@@ -88,8 +88,6 @@ void loop() {
     if (msg != NULL) {
         receivedMsg = msg->getContent();
         delete msg;
-        // lcd->clearScreen();t
-        // lcd->display((String)receivedMsg, 0);
         if (Pattern::matchTemp(receivedMsg)) {
             temp = Pattern::getTemp(receivedMsg);
         } else if (Pattern::matchAngle(receivedMsg)) {
