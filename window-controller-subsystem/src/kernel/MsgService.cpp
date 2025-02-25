@@ -21,7 +21,7 @@ Msg* MsgServiceClass::receiveMsg() {
 
 void MsgServiceClass::init(int baud_rate) {
     Serial.begin(baud_rate);
-    content.reserve(256);
+    content.reserve(128);
     content = "";
     currentMsg = NULL;
     msgAvailable = false;

@@ -1,1 +1,2 @@
 - debounce the button
+- check interrupt period / race conditions idk
