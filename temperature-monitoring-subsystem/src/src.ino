@@ -1,12 +1,13 @@
 #include <WiFi.h>
 #include <PubSubClient.h>
 #include "config.hpp"
+#include "secrets.h"
 #include "TwoLedMonitor.hpp"
 #include "Led.hpp"
 #include "TempSensor.hpp"
 
-const char* ssid = "REDACTED_SSID";
-const char* password = "REDACTED_PASSWORD";
+const char* ssid = WIFI_SSID;
+const char* password = WIFI_PASSWORD;
 const char* mqtt_server = "broker.mqtt-dashboard.com";
 const char* temp_topic = "LAWRENC0-STM/temperature";
 const char* frequency_topic = "LAWRENC0-STM/frequency";
